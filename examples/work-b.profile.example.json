@@ -1,0 +1,5 @@
+{
+  "base_url": "https://plane.example.com",
+  "workspace_slug": "team-b",
+  "token_file": "~/.config/plane-mcp/tokens/work.token"
+}

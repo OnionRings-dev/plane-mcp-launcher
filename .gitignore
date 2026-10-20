@@ -1,0 +1,29 @@
+# Local connection settings and secrets (never commit these).
+.env
+.env.*
+!.env.example
+*.token
+*.key
+*.pem
+profiles/
+tokens/
+secrets/
+.config/
+.codex/
+.claude/
+.claude.json
+.mcp.json
+claude_desktop_config.json
+
+# Python and editor artifacts.
+__pycache__/
+*.py[cod]
+.venv/
+.uv-cache/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+.idea/
+.vscode/
+*.log
+dist/

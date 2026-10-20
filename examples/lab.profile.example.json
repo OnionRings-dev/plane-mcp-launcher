@@ -1,0 +1,5 @@
+{
+  "base_url": "https://tasks.example.net",
+  "workspace_slug": "lab",
+  "token_file": "~/.config/plane-mcp/tokens/lab.token"
+}
