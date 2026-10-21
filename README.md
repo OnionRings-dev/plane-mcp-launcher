@@ -36,6 +36,16 @@ The official server declares Python `>=3.10`; the launcher pins **server version
 
 ## Install
 
+For guided setup by a local coding agent, give it [INSTALL.md](INSTALL.md) and ask:
+
+> Follow INSTALL.md to install Plane MCP Launcher, guide me through creating my
+> token, configure my MCP client, and verify the connection. Never ask me to paste
+> the token into chat.
+
+The guide works before cloning and covers prerequisites, private profiles, token
+entry in your own terminal, and client registration. For manual setup, continue
+below.
+
 Download or clone this repository, then run these commands from its directory:
 
 ```sh
@@ -222,7 +232,7 @@ For Claude Desktop on macOS, logs are in `~/Library/Logs/Claude/` (`mcp.log` and
 
 To rotate credentials: create a replacement token, run `--set-token` for a profile using that token file, reconnect all affected entries, verify reads, then revoke the old token in Plane. Changing a shared token file affects all profiles referencing it.
 
-To update: review upstream release notes, change the `PACKAGE` pin in `plane-mcp.py`, update the prefetch command and attribution/version references, run the tests, reinstall the launcher and recheck connectivity. uv resolves transitive dependencies independently; this is a server-version pin, not a complete dependency lock.
+To update: review upstream release notes, change the `PACKAGE` pin in `plane-mcp.py`, update the prefetch commands in this README and `INSTALL.md` and attribution/version references, run the tests, reinstall the launcher and recheck connectivity. uv resolves transitive dependencies independently; this is a server-version pin, not a complete dependency lock.
 
 The old npm package `@makeplane/plane-mcp-server` is deprecated. This launcher uses the official Python server and `PLANE_BASE_URL`; it does not use the old `PLANE_API_HOST_URL` setting. See [Plane's migration guidance](https://developers.plane.so/dev-tools/mcp-server).
 
