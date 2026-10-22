@@ -39,7 +39,7 @@ one short message; use information already provided:
 
 | Detail | Guidance / default |
 | --- | --- |
-| MCP client | Codex (CLI, desktop or IDE), Claude Code, or Claude Desktop on macOS. Configure only the selected client(s). |
+| MCP client | Codex (CLI, desktop or IDE), Claude Code, OpenCode, or Claude Desktop on macOS. Configure only the selected client(s). |
 | Plane instance | Root URL, such as `https://plane.example.com`; no `/api/v1`, workspace path, credentials, query or fragment. |
 | Workspace | URL slug, not display name or UUID. For `https://plane.example.com/team-a/`, use `team-a`. |
 | Local profile | Suggest `work`; allow letters, digits, `_` and `-`, starting with a letter or digit. |
@@ -51,18 +51,43 @@ the token itself**. Collect one instance/workspace first, then repeat for any
 additional connections. A profile covers all projects the account can access
 in that workspace.
 
-Supported platforms are macOS, Linux, and WSL for CLI clients. Native Windows is
+Supported platforms are Linux, macOS, and WSL for CLI clients. Native Windows is
 unsupported. A native Windows GUI client cannot directly launch these WSL paths.
+On Linux use a CLI client such as Codex CLI, Claude Code or OpenCode; the Claude
+Desktop instructions here apply only to macOS. In WSL, install and run the
+launcher, Python, uv and CLI client inside the same Linux distribution, with
+profiles and tokens in its Linux home directory.
 A cloud-only agent or web connector cannot install this local stdio connection;
 the agent must run on the computer where the MCP client launches processes.
 
 ## 2. Check prerequisites and clone
 
-Check Git, Python 3.10+ and `uvx`. On macOS, do not assume `/usr/bin/python3` is
-recent enough. Install only missing prerequisites using the platform's package
-manager or the [official uv installation instructions](https://docs.astral.sh/uv/getting-started/installation/).
-For example, on macOS with Homebrew already installed, the packages are
-`git`, `python` and `uv`.
+Use `sh`, Bash or Zsh for the shell snippets. If the user's shell is Fish,
+run them through `sh` rather than pasting incompatible assignments into Fish.
+Check the OS with `uname -s`; on Linux also inspect `/etc/os-release` before
+selecting a package manager. Check Git, Python 3.10+, `uvx` and the selected
+client. Install only missing prerequisites; do not assume Homebrew on Linux.
+
+- Ubuntu/Debian: `sudo apt-get update`, then
+  `sudo apt-get install -y python3 git curl ca-certificates coreutils`.
+- Fedora: `sudo dnf install -y python3 git curl ca-certificates coreutils`.
+- macOS with Homebrew already installed: `brew install python uv git`.
+
+On Linux, or macOS without Homebrew, use the
+[official uv installer](https://docs.astral.sh/uv/getting-started/installation/)
+as the normal user: `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+For its default installation, `export PATH="$HOME/.local/bin:$PATH"` makes uv
+available in the current shell. Respect a custom install location and ensure
+the client inherits that location in PATH. Administrative privileges are only
+for system package installation; never run the launcher or client with `sudo`.
+
+Check the actual Python version: older Linux distributions and macOS's
+`/usr/bin/python3` may be too old. If the supported interpreter is named
+`python3.12`, use `command -v python3.12` in the selection below. Do not replace
+the OS's system Python. The remaining `mkdir -p`, `install -m`, `cp`, `chmod`
+and `command -v` options work on both GNU/Linux and macOS; GNU-only options or
+macOS-only tools are unnecessary. Install the chosen MCP client separately
+using its official instructions if it is missing.
 
 For a new checkout, create the chosen parent directory and run the equivalent of:
 
@@ -92,7 +117,9 @@ uvx --version
 ```
 
 Use the selected interpreter throughout, including client configuration. Keep
-that Python installation available after setup.
+that Python installation available after setup. Use paths on the machine
+running the client process: home directories are typically `/home/<user>` on
+Linux and `/Users/<user>` on macOS. Do not copy a macOS path to a Linux client.
 
 ## 3. Install the launcher and prepare the package
 
@@ -213,6 +240,42 @@ claude mcp get "$plane_mcp_server"
 
 User scope keeps the connection outside project configuration. See the
 [official Claude Code MCP guide](https://code.claude.com/docs/en/mcp).
+
+### OpenCode
+
+Merge one entry under `mcp` in the global `~/.config/opencode/opencode.json`
+(or the user's existing `opencode.jsonc`). Respect custom configuration and
+preserve unrelated settings. Use a JSONC-aware edit for files with comments;
+validate the result without printing unrelated settings. Do not create a
+project configuration for this personal connection.
+
+For the example profile `work` and server `plane-work`, substitute the selected
+absolute Python and launcher paths:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "plane-work": {
+      "type": "local",
+      "command": ["/absolute/path/to/python3", "/ABSOLUTE/HOME/.local/bin/plane-mcp", "work"],
+      "enabled": true,
+      "timeout": 30000
+    }
+  }
+}
+```
+
+Use the agreed server name and profile. `command` includes the executable and
+arguments in one array; `timeout` is in milliseconds. No token belongs in this
+configuration. Restart OpenCode, then run `opencode mcp list` from the intended
+project to check status. Project or managed settings may override global
+entries. With a remote backend, install on the backend computer.
+
+See the official [OpenCode MCP guide](https://opencode.ai/docs/mcp-servers/),
+[configuration guide](https://opencode.ai/docs/config/) and
+[MCP CLI commands](https://opencode.ai/docs/cli/#mcp). Continue with step 7;
+connection status alone does not verify access to Plane projects.
 
 ### Claude Desktop on macOS
 

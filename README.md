@@ -5,32 +5,70 @@ A small, independent **launcher for the official [Plane MCP server](https://gith
 The launcher starts `plane-mcp-server==0.3.4` as a local **stdio subprocess**. The official server provides the MCP tools and calls your Plane REST API. This repository contains the launcher, documentation and tests; it does not implement Plane tools or bundle the official server. It is not affiliated with or endorsed by Plane. See [attribution](NOTICE.md) and [MIT license](LICENSE).
 
 ```text
-Codex / Claude → local launcher → official Plane MCP server → your Plane API
-                 profile + token       stdio                   HTTPS
+Codex / Claude / OpenCode → local launcher → official Plane MCP server → your Plane API
+                           profile + token       stdio                   HTTPS
 ```
 
 The client starts a process for each connection. You do not need a shared daemon, public MCP port, VPS or container. Deploying a remote MCP service is outside this project's scope.
 
 ## Prerequisites and compatibility
 
-- **macOS or Linux**, or **WSL for CLI clients**. Native Windows is not supported: the launcher relies on POSIX file ownership, permissions and process replacement. A native Windows Claude Desktop process cannot directly use these WSL paths.
+- **Linux or macOS**, or **WSL for CLI clients**. Native Windows is not supported: the launcher relies on POSIX file ownership, permissions and process replacement. With WSL, install and run Python, uv and the CLI client inside the same Linux distribution, keeping profiles and tokens in its Linux home directory. Native Windows GUI clients cannot directly use these WSL paths.
 - **Python 3.10+** for the launcher and official server. Check `python3 --version`; on macOS `/usr/bin/python3` may be too old. Use the Python you installed, including its absolute path in GUI client configuration.
 - **[uv](https://docs.astral.sh/uv/getting-started/installation/)**, which provides `uvx`. The launcher uses `--no-config` and `--no-env-file`; use a current uv release supporting these options.
 - An existing Plane instance reachable from the computer running the client, its **root API URL**, a **workspace slug**, and your own **Plane personal access/API token** with access to that workspace.
-- A client that can launch local stdio MCP servers: Codex, Claude Code, or Claude Desktop on macOS as documented below.
+- A client that can launch local stdio MCP servers: Codex, Claude Code, OpenCode, or Claude Desktop on macOS as documented below.
 - Internet access for the first package installation. Later launches reuse uv's cache but are not guaranteed to work offline if dependencies or the selected Python environment are missing. Calls to Plane always need access to your instance.
 
-On macOS with Homebrew:
+The shell examples use **`sh`, Bash or Zsh syntax** on both Linux and macOS. If your usual shell is Fish or another incompatible shell, start `sh` before following them. JSON and TOML examples go in configuration files, not the shell. Common commands (`mkdir -p`, `install -m`, `cp`, `chmod` and `command -v`) work with Linux's GNU utilities and macOS's BSD utilities; Homebrew is needed only for the macOS installation example.
+
+### Linux (including WSL)
+
+Install missing prerequisites using your distribution's package manager. For Ubuntu/Debian:
 
 ```sh
-brew install python uv
+sudo apt-get update
+sudo apt-get install -y python3 git curl ca-certificates coreutils
+```
+
+For Fedora:
+
+```sh
+sudo dnf install -y python3 git curl ca-certificates coreutils
+```
+
+Install uv as your normal user using its [official installer](https://docs.astral.sh/uv/getting-started/installation/):
+
+```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+The PATH line makes the default uv installation available in the current shell. Restart your terminal after installation for the installer's persistent shell setup to take effect. If you selected a custom uv installation directory, add that directory to the environment used to launch the MCP client as well.
+
+### macOS
+
+With Homebrew already installed:
+
+```sh
+brew install python uv git
+```
+
+The same official uv installer also supports macOS if you do not use Homebrew; install Python 3.10+ separately in that case.
+
+### Check prerequisites on either OS
+
+```sh
 python3 --version
+python3 -c 'import sys; assert sys.version_info >= (3, 10), "Python 3.10+ required"; print(sys.executable)'
 uvx --version
 command -v python3
 command -v uvx
 ```
 
-On Linux or WSL, install Python 3.10+ using your distribution and uv using its official installation guide. The launcher itself uses only Python's standard library.
+Continue only with Python 3.10+; older Linux distributions may provide an older `python3`. If your supported interpreter has another name, such as `python3.12`, substitute it for `python3` in all shell commands, including `command -v python3`, and use its absolute path in client configuration. Do not replace your distribution's system Python. The launcher itself uses only Python's standard library; no `pip`, `venv`, Node.js or Homebrew is required for the launcher and official server.
+
+Install your chosen client separately using its official instructions. On Linux, the terminal setup in this guide works with Codex CLI, Claude Code and [OpenCode](https://opencode.ai/docs/). The Claude Desktop configuration below is specific to macOS; use a CLI client on Linux.
 
 The official server declares Python `>=3.10`; the launcher pins **server version 0.3.4**, not a specific Plane application release or every dependency. Tools and actions depend on your Plane release, edition and account permissions. There is no universal compatibility guarantee for older installations. Validate read operations against your own instance before using write actions. This repository's CI checks the launcher on Python 3.10, 3.12 and 3.14 on macOS and Linux; it does not test every Plane release.
 
@@ -126,7 +164,7 @@ Use each person's own token. Access follows Plane's token scope, memberships and
 
 ## Configure your client
 
-The examples explicitly select a Python interpreter so GUI apps do not accidentally use an older system Python via the script's shebang. Run `command -v python3` in a terminal and use that absolute path. Replace `/ABSOLUTE/HOME` with your actual home directory in configuration files; clients do not necessarily expand `~` or shell variables there.
+The examples explicitly select a Python interpreter so GUI apps do not accidentally use an older system Python via the script's shebang. Run `command -v python3` (or your selected interpreter's name) in a terminal and use that absolute path. Replace `/ABSOLUTE/HOME` with your actual home directory in configuration files, typically `/home/<user>` on Linux and `/Users/<user>` on macOS; clients do not necessarily expand `~` or shell variables there. The launcher path is `~/.local/bin/plane-mcp` on both systems. When the client runs over SSH, in WSL or on a remote backend, use paths and installations on that system.
 
 Repeat registration with a **unique server name and profile argument** for each workspace.
 
@@ -164,6 +202,40 @@ claude mcp get plane-work-a
 ```
 
 User scope stores the entries in `~/.claude.json`. Start a fresh session and inspect `/mcp`. Local or project entries with the same name take precedence. See the [official Claude Code MCP guide](https://code.claude.com/docs/en/mcp).
+
+### OpenCode
+
+Merge these entries into the global `~/.config/opencode/opencode.json` (or your existing `opencode.jsonc`), preserving other settings and servers. Use the global configuration to keep personal connection paths outside repositories.
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "plane-work-a": {
+      "type": "local",
+      "command": ["/absolute/path/to/python3", "/ABSOLUTE/HOME/.local/bin/plane-mcp", "work-a"],
+      "enabled": true,
+      "timeout": 30000
+    },
+    "plane-work-b": {
+      "type": "local",
+      "command": ["/absolute/path/to/python3", "/ABSOLUTE/HOME/.local/bin/plane-mcp", "work-b"],
+      "enabled": true,
+      "timeout": 30000
+    }
+  }
+}
+```
+
+OpenCode uses `mcp` and a single `command` array containing the executable and arguments. `type: "local"` launches the stdio process; `timeout` is in milliseconds for tool discovery. The token stays in the launcher's private file; no `environment` entry or OAuth login is needed.
+
+Restart OpenCode after editing the configuration, then check connection status:
+
+```sh
+opencode mcp list
+```
+
+Run this from the project where you will use the connection: project configuration, custom configuration and managed settings can override global entries. If you use a remote OpenCode backend, the launcher, profiles and token must exist on the backend computer. Complete the read-only verification below before requesting changes. See the official [OpenCode MCP guide](https://opencode.ai/docs/mcp-servers/), [configuration locations](https://opencode.ai/docs/config/) and [MCP CLI commands](https://opencode.ai/docs/cli/#mcp).
 
 ### Claude Desktop on macOS
 
@@ -211,9 +283,9 @@ Before requesting edits, identify the intended connection, workspace and project
 | Missing or invalid profile | File `~/.config/plane-mcp/profiles/<name>.json`, exact keys, valid UTF-8 JSON, root URL and workspace slug. |
 | Wrong token permissions or ownership | Run `--set-token` as your normal user. Use mode `600`, a regular file and no symlink. Do not run the client with `sudo`. |
 | `Python 3.10 or newer is required` | Select your installed Python. On macOS, avoid an outdated `/usr/bin/python3`; update the client's absolute `command` path. |
-| `uvx was not found` | Install uv, verify `uvx --version` and restart the client. The launcher searches PATH, `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. |
+| `uvx was not found` | Install uv, verify `uvx --version` and restart the client. The launcher searches PATH, `~/.local/bin` (the standalone installer's default on Linux and macOS), `/opt/homebrew/bin` and `/usr/local/bin`. For a custom installation, make its directory available in the client's PATH. |
 | uv rejects an option or package installation fails | Update uv; run the prefetch command with the same interpreter; check package-index access, proxy settings, disk space and dependency errors. |
-| Startup times out | Prefetch dependencies before starting the client. For Codex, set `startup_timeout_sec = 30`, or increase it if needed. |
+| Startup times out | Prefetch dependencies before starting the client. For Codex, set `startup_timeout_sec = 30`; for OpenCode, set `"timeout": 30000` in the server entry (milliseconds). Increase if needed. |
 | Script appears to wait when run without a flag | Normal stdio behavior: it is waiting for MCP input from a client. Use `--check-profile` or `--check-connection` for terminal checks; Ctrl-C stops it. |
 | HTTP 301/302/307/308 | Set the final canonical root URL, including HTTPS. The connection check rejects redirects to avoid forwarding credentials. Check reverse proxy routing. |
 | HTTP 401 | Token is wrong, expired, revoked, or belongs to another instance. Rotate it with `--set-token`. |
@@ -243,7 +315,7 @@ codex mcp remove plane-work-a
 claude mcp remove --scope user plane-work-a
 ```
 
-For Claude Desktop, remove the corresponding JSON entry and restart. Remove your installed launcher and local profiles/tokens when no longer needed. Removing an entry or deleting a token file does not revoke the token in Plane; revoke it in Plane separately.
+For OpenCode, remove the corresponding entry under `mcp` in the configuration where it was defined, then restart. Set `"enabled": false` instead to disable it temporarily. For Claude Desktop, remove the corresponding JSON entry and restart. Remove your installed launcher and local profiles/tokens when no longer needed. Removing an entry or deleting a token file does not revoke the token in Plane; revoke it in Plane separately.
 
 ## Development and public-repository hygiene
 
@@ -275,4 +347,6 @@ Only generic `.example.json` profiles belong in this repository. Real profiles, 
 - [uv installation](https://docs.astral.sh/uv/getting-started/installation/)
 - [Codex MCP configuration](https://developers.openai.com/codex/mcp)
 - [Claude Code MCP configuration](https://code.claude.com/docs/en/mcp)
+- [OpenCode MCP configuration](https://opencode.ai/docs/mcp-servers/)
+- [OpenCode configuration locations and precedence](https://opencode.ai/docs/config/)
 - [Claude Desktop local MCP configuration](https://modelcontextprotocol.io/docs/develop/connect-local-servers)
