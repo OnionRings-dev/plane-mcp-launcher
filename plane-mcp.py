@@ -113,7 +113,10 @@ class NoRedirect(HTTPRedirectHandler):
 def check_connection(base_url, workspace, token):
     """Make one read-only Plane REST request without printing its payload."""
     request = Request(base_url + "/api/v1/workspaces/" + workspace + "/projects/",
-                      headers={"x-api-key": token, "Accept": "application/json"})
+                      headers={"x-api-key": token, "Accept": "application/json",
+                               "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                                             "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+                                             "Version/18.0 Safari/605.1.15"})
     try:
         with build_opener(NoRedirect()).open(request, timeout=15) as response:
             if response.status != 200 or "application/json" not in response.headers.get("Content-Type", "").lower():

@@ -251,11 +251,13 @@ class ConnectionTests(unittest.TestCase):
         self.status = 200
         self.content_type = "application/json"
         self.requests = []
+        self.user_agents = []
         case = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
                 case.requests.append((self.path, self.headers.get("x-api-key")))
+                case.user_agents.append(self.headers.get("User-Agent"))
                 self.send_response(case.status)
                 self.send_header("Content-Type", case.content_type)
                 if case.status in (301, 302, 307, 308):
@@ -278,6 +280,10 @@ class ConnectionTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as output:
             launcher.check_connection(self.url, "team-a", DUMMY_TOKEN)
         self.assertEqual(self.requests, [("/api/v1/workspaces/team-a/projects/", DUMMY_TOKEN)])
+        self.assertEqual(self.user_agents, [
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
+        ])
         self.assertIn("HTTP 200 JSON", output.getvalue())
         self.assertNotIn(DUMMY_TOKEN, output.getvalue())
         self.assertNotIn("[]", output.getvalue())
